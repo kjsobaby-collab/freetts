@@ -19,6 +19,7 @@ if (-not $SkipVenv) {
 
 if (-not (Test-Path "packaging\bin\ffmpeg.exe")) { & "$root\packaging\fetch_ffmpeg.ps1" }
 
+if ($root.Length -gt 60) { Write-Warning "프로젝트 경로가 깁니다($($root.Length)자). Windows 경로 길이 제한(260자) 때문에 설치 파일 단계가 실패할 수 있습니다." }
 & $py -m PyInstaller --noconfirm --clean --distpath dist --workpath build packaging\lecture_tts_gui.spec
 $app = Join-Path $root "dist\LectureTTS"
 New-Item -ItemType Directory -Force (Join-Path $app "bin") | Out-Null
@@ -49,6 +50,7 @@ if (Test-Path $iscc) {
     $defs = @("/DAppVersion=$version")
     if ($Offline) { $defs += "/DOffline=1" }
     & $iscc @defs packaging\installer.iss
+    if ($LASTEXITCODE -ne 0) { throw "Inno Setup 컴파일 실패 (exit $LASTEXITCODE). 경로가 너무 길면 짧은 폴더(예: D:\lecture-tts)에서 빌드하세요." }
     Get-ChildItem dist\installer\*.exe | ForEach-Object {
         $h = (Get-FileHash $_.FullName -Algorithm SHA256).Hash
         "$h  $($_.Name)" | Tee-Object -FilePath "$($_.FullName).sha256"
