@@ -41,7 +41,10 @@ $version = & $py -c "import lecture_tts; print(lecture_tts.__version__)"
 $size = "{0:N0} MB" -f ((Get-ChildItem $app -Recurse | Measure-Object Length -Sum).Sum / 1MB)
 Write-Host "앱 폴더 크기: $size (설계 문서 8.9에 기록)"
 
-$iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+# Inno Setup: 시스템 설치(Program Files) 또는 사용자별 설치(winget 기본) 경로
+$iscc = @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe") |
+    Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $iscc) { $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" }
 if (Test-Path $iscc) {
     $defs = @("/DAppVersion=$version")
     if ($Offline) { $defs += "/DOffline=1" }
