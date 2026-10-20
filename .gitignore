@@ -1,0 +1,18 @@
+.venv/
+.venv-build/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+output/
+auditions/
+packaging/bin/
+*.lttproj
+docs/~$*
+# 개인 파일 (저장소에 올리지 않음)
+engsubtitle.txt
+script.txt
+test.wav
+test_kokoro.py
+audition_voice.py

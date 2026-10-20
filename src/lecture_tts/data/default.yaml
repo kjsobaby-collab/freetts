@@ -1,0 +1,69 @@
+# 기본 설정 (lecture-tts). 사용자 설정(settings.yaml)·--config 파일·CLI 옵션이 이 값을 덮어쓴다.
+schema_version: 1
+
+engine:
+  name: kokoro              # kokoro | piper | azure | fake
+  fallback_engine: kokoro   # azure 한도 초과·오류 시 전환 (null이면 중단)
+  rate: 1.0
+
+engines:
+  kokoro:
+    lang_code: a            # a=미국 영어, b=영국 영어 (음성 이름 첫 글자와 일치)
+    voice: af_heart
+    max_chars: 400
+    device: auto            # auto | cpu | cuda
+  piper:
+    voice: en_US-lessac-high
+    model_path: null        # null이면 사용자 모델 폴더/piper/{voice}.onnx
+  azure:
+    voice: en-US-JennyNeural
+    region_env: AZURE_SPEECH_REGION
+    key_env: AZURE_SPEECH_KEY
+    monthly_char_limit: 500000
+    warn_at_ratio: 0.8
+
+speakers:
+  default: { voice: null }
+  student: { voice: am_michael, rate: 1.05 }
+
+parsing:
+  section_patterns:
+    - '^##\s*Slide\s*(\d+)\s*[:.]?\s*(.*)$'
+    - '^\[SLIDE\s*(\d+)\]\s*(.*)$'
+    - '^Slide\s+(\d+)\s*[.:)]\s*(.*)$'
+    - '^##\s+(?!#)(.+)$'
+  read_title: false
+  read_section_titles: false
+  read_preamble: false
+  default_pause_ms: 1000       # 길이 없는 [pause]
+  on_invalid_directive: warn   # warn | error | keep_text
+
+normalization:
+  lexicon: null                # null이면 %LOCALAPPDATA%\LectureTTS\lexicon.yaml
+  spell_out_acronyms: true
+  read_urls: true
+
+chunking:
+  strategy: sentence           # sentence | paragraph
+  min_chars: 30
+  max_chars: null              # null이면 엔진 기본값
+
+audio:
+  format: mp3
+  bitrate: 128k
+  sample_rate: 24000
+  paragraph_pause_ms: 600
+  section_padding_ms: 1000
+  loudness_lufs: -16
+  export_sections: true
+  export_merged: true
+
+subtitles:
+  formats: [srt, vtt]
+  max_line_chars: 42
+
+runtime:
+  concurrency: 1
+  max_retries: 3
+  cache_dir: null              # null이면 %LOCALAPPDATA%\LectureTTS\cache\tts
+  output_dir: null             # null이면 스크립트 폴더/output
