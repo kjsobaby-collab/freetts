@@ -15,8 +15,9 @@
 | [배포 매뉴얼 (Word)](docs/LectureTTS_배포매뉴얼.docx) | 설치 파일 빌드, 배포, 사용자 PC 설치·업데이트·제거, 오프라인 설치 |
 | [사용 설명서 (Word)](docs/LectureTTS_사용설명서.docx) | 화면 구성, 스크립트 작성 규칙, 생성·재생, 설정, CLI, 자주 묻는 질문 |
 
-**설치 파일**: [Releases](https://github.com/kjsobaby-collab/freetts/releases)에 `LectureTTS-<버전>-setup.exe`가 올라오면
-내려받아 실행하면 됩니다 (Python 불필요, 관리자 권한 불필요). 아직 릴리스가 없으면 아래 소스 설치를 사용하세요.
+**설치 파일 (권장)**: [최신 릴리스](https://github.com/kjsobaby-collab/freetts/releases/latest)에서
+`LectureTTS-<버전>-setup.exe`(약 252MB)를 내려받아 실행합니다. Windows 10/11 64비트, Python 불필요, 관리자 권한 불필요.
+첫 실행 때 음성 모델(약 330MB)을 내려받습니다. "Windows의 PC 보호" 경고가 뜨면 **추가 정보 → 실행**을 누르세요(코드 서명 없음).
 
 **소스 설치** (Windows, Python 3.12 필요):
 

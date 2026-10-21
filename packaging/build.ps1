@@ -20,7 +20,11 @@ if (-not $SkipVenv) {
 if (-not (Test-Path "packaging\bin\ffmpeg.exe")) { & "$root\packaging\fetch_ffmpeg.ps1" }
 
 if ($root.Length -gt 60) { Write-Warning "프로젝트 경로가 깁니다($($root.Length)자). Windows 경로 길이 제한(260자) 때문에 설치 파일 단계가 실패할 수 있습니다." }
+# PyInstaller는 DLL 의존성을 PATH에서 찾는다. 빌드 PC의 Anaconda 등 다른 DLL이 섞이지 않도록 PATH를 최소화한다.
+$savedPath = $env:PATH
+$env:PATH = "$venv\Scripts;$env:SystemRoot\System32;$env:SystemRoot;$env:SystemRoot\System32\Wbem"
 & $py -m PyInstaller --noconfirm --clean --distpath dist --workpath build packaging\lecture_tts_gui.spec
+$env:PATH = $savedPath
 $app = Join-Path $root "dist\LectureTTS"
 New-Item -ItemType Directory -Force (Join-Path $app "bin") | Out-Null
 Copy-Item packaging\bin\* (Join-Path $app "bin") -Force

@@ -315,12 +315,11 @@ def deploy_manual(out: Path):
         ["배포 형태", "GitHub Releases에 .exe 첨부", "GitHub 저장소에서 다운로드"],
         ["업데이트", "새 설치 파일을 덮어 설치", "git pull 또는 새로 다운로드"],
     ], [3.2, 6.7, 6.7])
-    d.note("현재 상태", [
-        f"이 문서 작성 시점({DATE})에는 설치 파일 빌드 스크립트(`packaging\\build.ps1`)까지 준비되어 있습니다. "
-        "설치 파일을 실제로 빌드해 깨끗한 PC에 설치하는 시험은 아직 하지 않았습니다.",
-        "첫 빌드 후 앱 용량·빌드 시간을 이 문서에 적고, 9장 체크리스트로 확인한 다음 배포하세요. "
-        "그 전까지는 방법 B(소스 코드 설치)로 배포할 수 있습니다.",
-    ], "warn")
+    d.note("검증 상태", [
+        f"버전 {__version__} 설치 파일은 {DATE}에 빌드해 개발 PC에서 설치 → 첫 실행 모델 다운로드 → 합성(mp3·자막) → GUI 실행 → "
+        "업데이트 설치 → 제거까지 확인했습니다.",
+        "깨끗한 Windows 10/11 PC, 한글 사용자 이름 계정, 오프라인 설치판은 아직 확인하지 않았습니다. 9장 체크리스트로 확인하세요.",
+    ], "info")
 
     d.h1("2. 배포 구성")
     d.h2("2.1 설치 후 폴더 구성 (방법 A)")
@@ -352,6 +351,7 @@ def deploy_manual(out: Path):
         ["운영체제", "Windows 10 / 11 64비트"],
         ["메모리", "8GB 이상 권장"],
         ["디스크", "약 2GB 이상 여유 공간 (앱 약 1.0GB + 모델 약 330MB + 캐시)"],
+        ["다운로드", f"설치 파일 약 252MB ({REPO}/releases)"],
         ["GPU", "필요 없음 (설치판은 CPU로 합성)"],
         ["인터넷", "첫 실행 때 모델 다운로드에만 필요 (오프라인 설치판은 불필요)"],
         ["권한", "일반 사용자 계정으로 설치 가능 (관리자 권한 불필요)"],
@@ -363,7 +363,7 @@ def deploy_manual(out: Path):
         ["Inno Setup", "**6.x** — https://jrsoftware.org/isdl.php (기본 경로 `C:\\Program Files (x86)\\Inno Setup 6`)"],
         ["인터넷", "PyTorch(CPU), 패키지, ffmpeg, (오프라인판) 모델 다운로드"],
         ["디스크", "빌드 환경과 결과물용 10GB 이상 여유 공간 권장"],
-        ["폴더 위치", "**짧은 경로**(예: `D:\lecture-tts`). 경로가 길면 Windows 경로 길이 제한(260자) 때문에 설치 파일 단계가 실패합니다."],
+        ["폴더 위치", "**짧은 경로**(예: `D:\\lecture-tts`). 경로가 길면 Windows 경로 길이 제한(260자) 때문에 설치 파일 단계가 실패합니다."],
         ["소스 코드", f"GitHub 저장소: {REPO}"],
     ], [3.5, 13.1])
 
@@ -413,13 +413,13 @@ def deploy_manual(out: Path):
         "(휴대용 배포).",
         "사용자는 압축을 풀고 `LectureTTS.exe`를 실행하면 됩니다. 이 방식에는 시작 메뉴 바로가기와 제거 기능이 없습니다.",
     ])
-    d.p("실측값(0.1.0, CPU용 PyTorch): 앱 폴더 약 1,035MB, 온라인 설치 파일 약 260MB. 처음 빌드는 패키지 다운로드를 포함해 약 20~30분 걸립니다.")
+    d.p("실측값(0.1.0, CPU용 PyTorch): 앱 폴더 약 1,000MB, 온라인 설치 파일 약 252MB. 처음 빌드는 패키지 다운로드를 포함해 약 20~30분 걸립니다.")
     d.h2("4.5 빌드 PC에서 먼저 확인")
     d.p("먼저 자동 점검을 실행합니다. 예제 스크립트의 첫 섹션을 실제 엔진으로 합성해 결과를 파일로 남깁니다 "
         "(모델이 없으면 먼저 내려받으므로 인터넷이 필요합니다).")
     d.code([
-        "dist\LectureTTS\LectureTTS.exe --selftest D:\selftest",
-        "Get-Content D:\selftest\selftest.txt     # 첫 줄이 OK이면 정상",
+        "dist\\LectureTTS\\LectureTTS.exe --selftest D:\\selftest",
+        "Get-Content D:\\selftest\\selftest.txt     # 첫 줄이 OK이면 정상",
     ])
     d.p("그다음 화면으로 확인합니다.")
     d.steps([
@@ -607,8 +607,9 @@ def deploy_manual(out: Path):
         ["합성이 매우 느림", "CPU 합성", "정상입니다. 방법 B에서 GPU용 PyTorch를 쓰면 빨라집니다."],
         ["빌드 중 `py -3.12`를 찾을 수 없음", "Python 3.12 미설치", "python.org에서 3.12 설치 (py launcher 포함)"],
         ["빌드 후 설치 파일이 없음", "Inno Setup 미설치", "Inno Setup 6 설치 후 `build.ps1 -SkipVenv`로 다시 실행"],
-        ["Inno Setup 단계에서 \"지정된 경로를 찾을 수 없습니다\"", "경로 길이 제한(260자) 초과", "프로젝트를 짧은 경로(예: `D:\lecture-tts`)로 옮겨 `build.ps1 -SkipVenv` 실행"],
-        ["설치 후 합성이 되는지 확인하고 싶음", "—", "`LectureTTS.exe --selftest D:\selftest` 실행 후 `selftest.txt` 첫 줄이 OK인지 확인"],
+        ["Inno Setup 단계에서 \"지정된 경로를 찾을 수 없습니다\"", "경로 길이 제한(260자) 초과", "프로젝트를 짧은 경로(예: `D:\\lecture-tts`)로 옮겨 `build.ps1 -SkipVenv` 실행"],
+        ["업데이트 후 \"DLL load failed while importing QtCore\"", "이전 버전 파일이 남음", "설치 파일이 `_internal` 폴더를 지우고 다시 설치합니다. 계속되면 제거 후 다시 설치"],
+        ["설치 후 합성이 되는지 확인하고 싶음", "—", "`LectureTTS.exe --selftest D:\\selftest` 실행 후 `selftest.txt` 첫 줄이 OK인지 확인"],
         ["Git Bash에서 한글이 깨짐", "콘솔 인코딩(cp949)", "PowerShell이나 명령 프롬프트에서 실행"],
         ["프로그램이 비정상 종료", "—", "도움말 → 진단 정보 내보내기로 만든 zip을 개발자에게 전달 (스크립트 원문·API 키는 포함되지 않음)"],
     ], [4.6, 3.6, 8.4])

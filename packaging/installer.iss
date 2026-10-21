@@ -34,6 +34,10 @@ Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
 [Tasks]
 Name: "desktopicon"; Description: "바탕화면 바로가기 만들기"; GroupDescription: "추가 작업:"
 
+[InstallDelete]
+; 업데이트 설치 시 이전 버전의 라이브러리(DLL)가 남아 새 버전과 섞이지 않도록 먼저 지운다 (사용자 데이터는 별도 폴더라 영향 없음)
+Type: filesandordirs; Name: "{app}\_internal"
+
 [Files]
 Source: "..\dist\LectureTTS\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
