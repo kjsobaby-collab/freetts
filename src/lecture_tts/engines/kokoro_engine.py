@@ -87,9 +87,10 @@ class KokoroEngine(TTSEngine):
 
     def problems(self) -> list[str]:
         out = []
-        try:
-            import kokoro  # noqa: F401
-        except ImportError:
+        import importlib.util
+
+        # 실제 import(torch 포함, 수십 초)는 하지 않는다 — GUI 메인 스레드에서 불려도 멈추지 않게
+        if importlib.util.find_spec("kokoro") is None:
             out.append("kokoro 패키지가 설치되지 않았습니다 (pip install kokoro).")
             return out
         if not model_cached(self.repo_id):

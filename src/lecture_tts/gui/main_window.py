@@ -14,7 +14,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QSettings, Qt, QThread, QTimer, QUrl, Signal
 from PySide6.QtGui import QAction, QDesktopServices, QKeySequence
-from PySide6.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QHeaderView, QLabel, QMainWindow,
+from PySide6.QtWidgets import (QApplication, QFileDialog, QGroupBox, QHeaderView, QLabel, QMainWindow,
                                QMessageBox, QPlainTextEdit, QProgressBar, QSplitter, QTableWidget,
                                QTableWidgetItem, QTabWidget, QToolButton, QVBoxLayout, QWidget)
 
@@ -75,6 +75,7 @@ class MainWindow(QMainWindow):
         self._audition = None
         self._lexicon = None
         self._tasks: list[TaskThread] = []
+        self._wizard = None
 
         # 작업 스레드에 엔진 상주
         self.worker_thread = QThread(self)
@@ -182,9 +183,18 @@ class MainWindow(QMainWindow):
         self.settings_panel.openAudition.connect(self.open_audition)
         self.settings_panel.openLexicon.connect(lambda: self.open_lexicon(""))
 
+        # 오른쪽 열: 설정 패널 + 그 아래 진행 상황 (생성 중 눈에 잘 띄도록 화면 맨 아래가 아닌 이곳에 둔다)
+        right = QWidget()
+        right.setMinimumWidth(230)
+        rv = QVBoxLayout(right)
+        rv.setContentsMargins(0, 0, 0, 0)
+        rv.addWidget(self.settings_panel)
+        rv.addWidget(self._build_status_box())
+        rv.addStretch(1)
+
         self.splitter.addWidget(self.section_list)
         self.splitter.addWidget(self.tabs)
-        self.splitter.addWidget(self.settings_panel)
+        self.splitter.addWidget(right)
         self.splitter.setStretchFactor(1, 1)
         self.splitter.setSizes([210, 780, 270])
         v.addWidget(self.splitter, 1)
@@ -192,14 +202,6 @@ class MainWindow(QMainWindow):
         self.player = PlayerBar()
         self.player.timelinePosition.connect(self._on_timeline)
         v.addWidget(self.player)
-
-        prow = QHBoxLayout()
-        self.progress = QProgressBar()
-        self.progress.setTextVisible(True)
-        self.progress_label = QLabel("대기 중")
-        prow.addWidget(self.progress_label)
-        prow.addWidget(self.progress, 1)
-        v.addLayout(prow)
 
         self.log_toggle = QToolButton()
         self.log_toggle.setText("▸ 로그")
@@ -213,8 +215,34 @@ class MainWindow(QMainWindow):
                                                     self.log_toggle.setText("▾ 로그" if on else "▸ 로그")))
         v.addWidget(self.log_toggle, 0, Qt.AlignmentFlag.AlignLeft)
         v.addWidget(self.log_view)
-        self.engine_label = QLabel("")
-        self.statusBar().addPermanentWidget(self.engine_label)
+
+    def _build_status_box(self) -> QGroupBox:
+        box = QGroupBox("진행 상황")
+        self.status_box = box
+        bl = QVBoxLayout(box)
+        self.progress_label = QLabel("대기 중")
+        self.progress_label.setWordWrap(True)
+        self.progress_label.setStyleSheet("font-weight: bold; font-size: 13px;")
+        self.progress = QProgressBar()
+        self.progress.setTextVisible(True)
+        self.progress.setRange(0, 1)
+        self.progress.setValue(0)
+        self.progress_detail = QLabel("")
+        self.progress_detail.setWordWrap(True)
+        self.engine_label = QLabel("엔진: 아직 불러오지 않음 (첫 생성 때 불러옵니다)")
+        self.engine_label.setWordWrap(True)
+        self.engine_label.setStyleSheet("color: #8a8f98; font-size: 11px;")
+        for w in (self.progress_label, self.progress, self.progress_detail, self.engine_label):
+            bl.addWidget(w)
+        self.elapsed_timer = QTimer(self, interval=1000, timeout=self._update_progress_label)
+        return box
+
+    def _set_status_active(self, on: bool) -> None:
+        """생성 중에는 진행 상황 상자를 강조 표시한다."""
+        self.status_box.setStyleSheet(
+            "QGroupBox { border: 2px solid #2563eb; border-radius: 4px; margin-top: 8px; padding-top: 4px; }"
+            "QGroupBox::title { subcontrol-origin: margin; left: 8px; color: #2563eb; font-weight: bold; }"
+            if on else "")
 
     def _build_menus(self) -> None:
         mb = self.menuBar()
@@ -523,7 +551,11 @@ class MainWindow(QMainWindow):
         self.act_build_changed.setEnabled(not on)
         self.act_stop.setEnabled(on)
         self.settings_panel.setEnabled(not on)
-        if not on:
+        self._set_status_active(on)
+        if on:
+            self.elapsed_timer.start()
+        else:
+            self.elapsed_timer.stop()
             self.progress_label.setText("대기 중")
 
     def _engine_ready_or_wizard(self) -> bool:
@@ -566,21 +598,29 @@ class MainWindow(QMainWindow):
         self._total_chars = 0
         self._speed = deque(maxlen=12)
         self._sections_done = 0
+        self._total = 0
+        self._cur_section = None
+        self._stage = "준비 중…"
         self.progress.setRange(0, 0)
-        self.progress_label.setText("준비 중…")
+        self.progress_label.setText(self._stage)
+        self.progress_detail.setText("스크립트를 확인하고 있습니다.")
         self._log(f"생성 시작: {'전체' if sections is None else '섹션 ' + ', '.join(map(str, sections))}")
         self.requestBuild.emit(self.cfg.model_copy(deep=True), str(self.script_path), sections, True)
 
     def stop(self) -> None:
         if self.building:
             self.host.cancel_token.cancel()
-            self.progress_label.setText("중지하는 중… (현재 문장 합성이 끝나면 멈춥니다)")
+            self._stage = "중지하는 중… (현재 문장 합성이 끝나면 멈춥니다)"
+            self._update_progress_label()
 
     def _on_plan(self, total: int, chars: int, cached: int) -> None:
         self.progress.setRange(0, max(total, 1))
         self.progress.setValue(0)
         self._total = total
         self._total_chars = chars
+        self._stage = "음성 생성 중"
+        self._log(f"청크 {total}개 · {chars:,}자 (캐시 재사용 {cached}개)")
+        self._update_progress_label()
 
     def _on_section_started(self, idx: int, n: int) -> None:
         self.section_list.set_one(idx, "running")
@@ -596,14 +636,31 @@ class MainWindow(QMainWindow):
         self.progress.setValue(self._done_chunks)
         self._update_progress_label()
 
+    @staticmethod
+    def _fmt_secs(sec: float) -> str:
+        m, s = divmod(int(sec), 60)
+        return f"{m}분 {s}초" if m else f"{s}초"
+
     def _update_progress_label(self) -> None:
-        eta = ""
+        """진행 상황 상자 갱신 (시그널마다 + 생성 중 1초마다 경과 시간)."""
+        if not self.building:
+            return
+        stage = self._stage
+        if self._total and self._done_chunks and stage == "음성 생성 중":
+            stage += f" — {self._done_chunks * 100 // self._total}%"
+        self.progress_label.setText(stage)
+        lines = []
+        if self._cur_section is not None and self.doc:
+            label = next((s.label for s in self.doc.sections if s.index == self._cur_section), "")
+            lines.append(f"현재: {label}")
+        if self._total:
+            lines.append(f"섹션 {self._sections_done}/{len(self._targets)} · 청크 {self._done_chunks}/{self._total}")
+        line = f"경과 {self._fmt_secs(time.perf_counter() - self._t0)}"
         if self._speed:
             remain = (sum(self._speed) / len(self._speed)) * max(self._total_chars - self._done_chars, 0)
-            m, s = divmod(int(remain), 60)
-            eta = f" · 남은 시간 약 {m}분 {s}초" if m else f" · 남은 시간 약 {s}초"
-        self.progress_label.setText(f"진행: 섹션 {self._sections_done}/{len(self._targets)} · "
-                                    f"청크 {self._done_chunks}/{getattr(self, '_total', 0)}{eta}")
+            line += f" · 남은 시간 약 {self._fmt_secs(remain)}"
+        lines.append(line)
+        self.progress_detail.setText("\n".join(lines))
 
     def _on_build_finished(self, result) -> None:
         self._set_building(False)
@@ -616,13 +673,18 @@ class MainWindow(QMainWindow):
         self._load_manifest()
         if result.cancelled:
             self._log("■ 중지됨 — 완료된 문장은 캐시에 남았습니다.")
-            self.progress_label.setText("중지됨")
+            self.progress_label.setText("■ 중지됨")
+            self.progress_detail.setText("완료된 문장은 캐시에 남았습니다. ‘변경분만 생성’으로 이어서 만들 수 있습니다.")
             return
         msg = f"완료 ({elapsed:.1f}초) · 새로 합성 {result.synthesized} · 캐시 {result.cached}"
         if result.merged_path:
             msg += f" · 전체 {result.total_duration_ms / 1000 / 60:.1f}분"
         self._log("✓ " + msg)
-        self.progress_label.setText(msg)
+        self.progress_label.setText("✓ 완료" if not result.failed else f"완료 (실패 {len(result.failed)}개)")
+        detail = [f"걸린 시간 {self._fmt_secs(elapsed)}", f"새로 합성 {result.synthesized} · 캐시 재사용 {result.cached}"]
+        if result.merged_path:
+            detail.append(f"오디오 길이 {result.total_duration_ms / 1000 / 60:.1f}분 — ‘출력 폴더 열기’로 확인")
+        self.progress_detail.setText("\n".join(detail))
         self.project.last_output = str(result.out_dir)
         if result.failed:
             QMessageBox.warning(self, "일부 실패", f"{len(result.failed)}개 문장을 합성하지 못했습니다.\n"
@@ -635,6 +697,8 @@ class MainWindow(QMainWindow):
         self.progress.setValue(0)
         self.reparse()
         self._log("✕ " + msg)
+        self.progress_label.setText("✕ 생성 실패")
+        self.progress_detail.setText(msg[:300])
         box = QMessageBox(QMessageBox.Icon.Warning, "생성 실패", msg, parent=self)
         box.setDetailedText(details)
         box.exec()
@@ -741,10 +805,45 @@ class MainWindow(QMainWindow):
         dlg.show()
         self._lexicon = dlg
 
-    def open_wizard(self) -> None:
+    def open_wizard(self, auto_close: bool = False) -> None:
+        """초기 설정 창. 점검은 작업 스레드에서 돌고 단계별 진행 상황을 보여 준다.
+        auto_close=True(시작 시 점검): 창을 띄운 채 메인 창도 쓸 수 있고, 문제가 없으면 저절로 닫힌다."""
         from .dialogs.setup_wizard import SetupWizard
 
-        SetupWizard(self, self.cfg.engines.kokoro.repo_id).exec()
+        if self._wizard is not None and self._wizard.isVisible():
+            self._wizard.raise_()
+            self._wizard.activateWindow()
+            return
+        dlg = SetupWizard(self, self.cfg.engines.kokoro.repo_id, auto_close=auto_close)
+        self._wizard = dlg
+        dlg.stepChanged.connect(self._on_env_check_progress)
+        dlg.checked.connect(self._on_env_checked)
+        dlg.finished.connect(self._on_wizard_closed)
+        if auto_close:
+            dlg.show()
+        else:
+            dlg.exec()
+
+    def _on_env_check_progress(self, i: int, n: int, name: str) -> None:
+        if not self.building and i < n:
+            self.progress_label.setText("프로그램 준비 상태 확인 중…")
+            self.progress_detail.setText(f"{i + 1}/{n} 단계: {name}")
+            self.progress.setRange(0, n)
+            self.progress.setValue(i)
+
+    def _on_env_checked(self, checks) -> None:
+        if self.building:
+            return
+        bad = [c.name for c in checks if c.required and not c.ok]
+        self.progress_label.setText("대기 중" if not bad else "초기 설정 필요")
+        self.progress_detail.setText("" if not bad else "확인 필요: " + ", ".join(bad))
+        self.progress.setRange(0, 1)
+        self.progress.setValue(0)
+        kokoro = next((c for c in checks if c.key == "kokoro_pkg"), None)
+        if kokoro and kokoro.ok and not self.engine_label.text().endswith("준비됨"):
+            self.engine_label.setText("엔진: Kokoro 확인됨 (첫 생성 때 모델을 불러옵니다)")
+
+    def _on_wizard_closed(self, _result: int) -> None:
         self._light_engines.clear()
         self.reparse()
 
@@ -793,8 +892,8 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "업데이트 확인", f"확인 실패: {err}")
 
     def first_run_checks(self) -> None:
-        if self.cfg.engine.name == "kokoro" and self._light_engine().problems():
-            self.open_wizard()
+        if self.cfg.engine.name == "kokoro":
+            self.open_wizard(auto_close=True)
         if self.settings.value("update/check", True, type=bool):
             self.check_updates(manual=False)
 
@@ -803,9 +902,27 @@ class MainWindow(QMainWindow):
     # ======================================================================
     def _on_engine_loading(self, name: str) -> None:
         self._engine_state(f"{name} 모델 불러오는 중…")
+        stage = f"{name} 음성 모델 불러오는 중…"
+        hint = "처음 한 번은 30초~1분 정도 걸릴 수 있습니다. 이후에는 바로 시작합니다."
+        if self.building:
+            self._stage = stage
+            self._update_progress_label()
+            self.progress_detail.setText(self.progress_detail.text() + "\n" + hint)
+        else:
+            self.progress_label.setText(stage)
+            self.progress_detail.setText(hint)
+            self.progress.setRange(0, 0)
 
     def _on_engine_ready(self, name: str) -> None:
         self._engine_state(f"{name} 준비됨")
+        if self.building:
+            self._stage = "음성 생성 시작…"
+            self._update_progress_label()
+        else:
+            self.progress_label.setText("대기 중")
+            self.progress_detail.setText("")
+            self.progress.setRange(0, 1)
+            self.progress.setValue(0)
 
     def _on_chunk_failed(self, where: str, msg: str) -> None:
         self._log(f"✕ {where}: {msg}")
@@ -814,7 +931,7 @@ class MainWindow(QMainWindow):
         self._log(("⚠ " if level == "warning" else "") + text)
 
     def _engine_state(self, text: str) -> None:
-        self.engine_label.setText(text)
+        self.engine_label.setText("엔진: " + text)
         self._log(text)
 
     def _log(self, text: str) -> None:
@@ -841,5 +958,7 @@ class MainWindow(QMainWindow):
             os._exit(0)  # 합성 중인 모델 호출이 끝나지 않으면 강제 종료
         for t in self._tasks:
             t.wait(2000)
+        if self._wizard is not None and self._wizard.check_thread is not None:
+            self._wizard.check_thread.wait(15000)
         e.accept()
         QApplication.instance().quit()

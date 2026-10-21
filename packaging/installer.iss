@@ -1,7 +1,7 @@
 ﻿; Inno Setup 6 스크립트 — 사용자별 설치(관리자 권한 불필요), 시작 메뉴·바탕화면 바로가기
 ; 빌드: packaging\build.ps1 (ISCC /DAppVersion=x.y.z [/DOffline=1] packaging\installer.iss)
 #ifndef AppVersion
-  #define AppVersion "0.1.0"
+  #define AppVersion "0.1.1"
 #endif
 #define AppName "Lecture TTS"
 #ifdef Offline

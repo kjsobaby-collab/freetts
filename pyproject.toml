@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lecture-tts"
-version = "0.1.0"
+version = "0.1.1"
 description = "Lecture script -> English narration (mp3/wav) + subtitles, with free local TTS engines"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
