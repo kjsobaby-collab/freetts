@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lecture-tts"
 version = "0.1.1"
+license = {text = "GPL-3.0-or-later"}
 description = "Lecture script -> English narration (mp3/wav) + subtitles, with free local TTS engines"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"

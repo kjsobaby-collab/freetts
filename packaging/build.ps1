@@ -57,7 +57,9 @@ if (Test-Path $iscc) {
     if ($LASTEXITCODE -ne 0) { throw "Inno Setup 컴파일 실패 (exit $LASTEXITCODE). 경로가 너무 길면 짧은 폴더(예: D:\lecture-tts)에서 빌드하세요." }
     Get-ChildItem dist\installer\*.exe | ForEach-Object {
         $h = (Get-FileHash $_.FullName -Algorithm SHA256).Hash
-        "$h  $($_.Name)" | Tee-Object -FilePath "$($_.FullName).sha256"
+        $line = "$h  $($_.Name)"
+        Set-Content -Path "$($_.FullName).sha256" -Value $line -Encoding Ascii  # PS 5.1 기본(UTF-16)을 피한다
+        $line
     }
 } else {
     Write-Warning "Inno Setup 6이 없습니다: https://jrsoftware.org/isdl.php — 설치 후 다시 실행하세요."

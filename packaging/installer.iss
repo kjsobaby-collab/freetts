@@ -26,7 +26,8 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 WizardStyle=modern
 UninstallDisplayIcon={app}\LectureTTS.exe
-LicenseFile=..\dist\LectureTTS\THIRD_PARTY_LICENSES.txt
+; 설치 동의 화면: 사용권·고지 사항 (UTF-8 BOM 필요). 오픈소스 전체 목록은 설치 폴더의 THIRD_PARTY_LICENSES.txt
+LicenseFile=..\License.txt
 
 [Languages]
 Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
@@ -40,6 +41,8 @@ Type: filesandordirs; Name: "{app}\_internal"
 
 [Files]
 Source: "..\dist\LectureTTS\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "..\License.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE-GPL-3.0.txt"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\LectureTTS.exe"

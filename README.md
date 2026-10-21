@@ -96,3 +96,7 @@ powershell -ExecutionPolicy Bypass -File packaging\build.ps1 -Offline   # 모델
 
 CPU용 torch 가상환경(`.venv-build`)을 만들고 PyInstaller(onedir) → ffmpeg 동봉 → 라이선스 목록 → Inno Setup 설치 파일
 (`dist\installer\*.exe` + SHA-256)을 만든다. Inno Setup 6 필요. 배포 전 설계 문서 8.10.8 릴리스 체크리스트를 확인한다.
+
+## 라이선스
+
+GPL-3.0 이상 ([`LICENSE`](LICENSE)). 사용권·고지 사항과 오픈소스 구성 요소 목록은 [`License.txt`](License.txt)(설치 때 동의 화면에 표시)를 보세요.
