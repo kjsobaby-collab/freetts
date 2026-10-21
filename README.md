@@ -10,10 +10,12 @@
 
 ## 다운로드·설치
 
-| 문서 | 내용 |
+| 문서 (0.1.1) | 내용 |
 |---|---|
-| [배포 매뉴얼 (Word)](docs/LectureTTS_배포매뉴얼.docx) | 설치 파일 빌드, 배포, 사용자 PC 설치·업데이트·제거, 오프라인 설치 |
-| [사용 설명서 (Word)](docs/LectureTTS_사용설명서.docx) | 화면 구성, 스크립트 작성 규칙, 생성·재생, 설정, CLI, 자주 묻는 질문 |
+| 사용 설명서 (Word) — [바로 받기](https://github.com/kjsobaby-collab/freetts/releases/download/v0.1.1/LectureTTS-0.1.1-user-guide-ko.docx) · [저장소 최신본](docs/LectureTTS_사용설명서.docx) | 화면 구성(진행 상황 상자), 스크립트 작성 규칙, 생성·재생, 설정, CLI, 자주 묻는 질문 |
+| 배포 매뉴얼 (Word) — [바로 받기](https://github.com/kjsobaby-collab/freetts/releases/download/v0.1.1/LectureTTS-0.1.1-deployment-manual-ko.docx) · [저장소 최신본](docs/LectureTTS_배포매뉴얼.docx) | 설치 파일 빌드, 배포, 사용자 PC 설치·업데이트·제거, 오프라인 설치, 라이선스 |
+
+'바로 받기'는 [v0.1.1 릴리스](https://github.com/kjsobaby-collab/freetts/releases/tag/v0.1.1)에 첨부된 문서입니다.
 
 **설치 파일 (권장)**: [최신 릴리스](https://github.com/kjsobaby-collab/freetts/releases/latest)에서
 `LectureTTS-<버전>-setup.exe`(약 252MB)를 내려받아 실행합니다. Windows 10/11 64비트, Python 불필요, 관리자 권한 불필요.
