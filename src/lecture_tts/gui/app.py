@@ -55,6 +55,12 @@ def selftest(out_dir: str) -> int:
         script = out / "selftest_sample.md"
         shutil.copyfile(paths.data_file("lecture_sample.md"), script)
         cfg = load_config(overrides={"runtime": {"output_dir": str(out)}})
+        from ..engines import create_engine
+
+        if cfg.engine.name == "kokoro" and create_engine(cfg).problems():  # 첫 실행처럼 모델이 없으면 마법사와 같은 방식으로 내려받는다
+            from ..engines.kokoro_engine import download_model
+
+            download_model()
         res = asyncio.run(run_pipeline(script, cfg, sections=[1], use_cache=False))
         files = sorted(str(p.relative_to(out)) for p in res.out_dir.rglob("*") if p.is_file())
         ok = not res.failed and any(f.endswith((".mp3", ".wav")) for f in files)
